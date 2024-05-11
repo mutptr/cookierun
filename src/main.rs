@@ -8,7 +8,7 @@ use win_screenshot::prelude::*;
 use windows::core::PCWSTR;
 use windows::Win32::Foundation::{HWND, LPARAM, WPARAM};
 use windows::Win32::UI::WindowsAndMessaging::{
-    FindWindowExW, PostMessageA, SendMessageA, SetWindowPos, SWP_NOMOVE, SWP_NOZORDER,
+    FindWindowExW, PostMessageW, SendMessageW, SetWindowPos, SWP_NOMOVE, SWP_NOZORDER,
     WA_CLICKACTIVE, WM_ACTIVATE, WM_LBUTTONDOWN, WM_LBUTTONUP,
 };
 
@@ -90,16 +90,16 @@ fn click(hwnd: isize, x: isize, y: isize) {
     let pos = x | (y << 16);
 
     unsafe {
-        SendMessageA(
+        SendMessageW(
             HWND(hwnd),
             WM_ACTIVATE,
             WPARAM(WA_CLICKACTIVE as usize),
             LPARAM(0),
         );
         std::thread::sleep(Duration::from_millis(thread_rng().gen_range(100..=300)));
-        PostMessageA(HWND(hwnd), WM_LBUTTONDOWN, WPARAM(1), LPARAM(pos)).ok();
+        PostMessageW(HWND(hwnd), WM_LBUTTONDOWN, WPARAM(1), LPARAM(pos)).ok();
         std::thread::sleep(Duration::from_millis(thread_rng().gen_range(70..=200)));
-        PostMessageA(HWND(hwnd), WM_LBUTTONUP, WPARAM(0), LPARAM(pos)).ok();
+        PostMessageW(HWND(hwnd), WM_LBUTTONUP, WPARAM(0), LPARAM(pos)).ok();
     }
 }
 
