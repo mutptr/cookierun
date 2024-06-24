@@ -18,7 +18,7 @@ fn main() {
     unsafe {
         let window_name = "HD-Player"
             .encode_utf16()
-            .chain(Some(0))
+            .chain(std::iter::once(0))
             .collect::<Vec<_>>();
         game_hwnd = FindWindowExW(
             HWND(main_hwnd),
@@ -55,6 +55,8 @@ fn main() {
     let to_tuple: fn(&image::ImageBuffer<_, _>) -> (&Vec<u8>, usize, usize) =
         |img| (img.as_raw(), img.width() as usize, img.height() as usize);
 
+    let mut rng = thread_rng();
+
     loop {
         std::thread::sleep(Duration::from_secs(3));
         let buf = capture_window(game_hwnd);
@@ -72,12 +74,9 @@ fn main() {
 
                         let y_min = position.1;
                         let y_max = position.1 + image.height() as usize;
-                        let pos = (
-                            thread_rng().gen_range(x_min..=x_max),
-                            thread_rng().gen_range(y_min..=y_max),
-                        );
+                        let pos = (rng.gen_range(x_min..=x_max), rng.gen_range(y_min..=y_max));
                         println!("click {} {}", pos.0, pos.1);
-                        click(game_hwnd, pos.0 as isize, pos.1 as isize);
+                        click(game_hwnd, pos.0 as isize, pos.1 as isize, &mut rng);
                         break 'outer;
                     }
                 }
@@ -86,7 +85,7 @@ fn main() {
     }
 }
 
-fn click(hwnd: isize, x: isize, y: isize) {
+fn click(hwnd: isize, x: isize, y: isize, rng: &mut impl Rng) {
     let pos = x | (y << 16);
 
     unsafe {
@@ -96,15 +95,15 @@ fn click(hwnd: isize, x: isize, y: isize) {
             WPARAM(WA_CLICKACTIVE as usize),
             LPARAM(0),
         );
-        std::thread::sleep(Duration::from_millis(thread_rng().gen_range(100..=300)));
+        std::thread::sleep(Duration::from_millis(rng.gen_range(100..=300)));
         PostMessageW(HWND(hwnd), WM_LBUTTONDOWN, WPARAM(1), LPARAM(pos)).ok();
-        std::thread::sleep(Duration::from_millis(thread_rng().gen_range(70..=200)));
+        std::thread::sleep(Duration::from_millis(rng.gen_range(100..=200)));
         PostMessageW(HWND(hwnd), WM_LBUTTONUP, WPARAM(0), LPARAM(pos)).ok();
     }
 }
 
 fn get_images(path: &str) -> Result<Vec<RgbImage>, std::io::Error> {
-    let mut images: Vec<_> = vec![];
+    let mut images = vec![];
     for entry in std::fs::read_dir(path)? {
         let dir = entry?;
         if let Some(filename) = dir.file_name().to_str() {
